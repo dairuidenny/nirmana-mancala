@@ -261,13 +261,29 @@
         isGameOver = false;
         document.getElementById('gameOver').style.display = 'none';
 
+        // 采用加权随机分布：棋子越多的槽位，放入下一颗棋子的概率越高
         slots = new Array(12).fill(0);
         let remaining = 50;
+
         while (remaining > 0) {
-            let idx = Math.floor(Math.random() * 12);
-            if (slots[idx] < 8) {
-                slots[idx]++;
-                remaining--;
+            let totalWeight = 0;
+            let weights = [];
+            
+            for (let i = 0; i < 12; i++) {
+                let w = (slots[i] < 8) ? Math.pow(slots[i] + 1, 0.5) : 0;
+                weights.push(w);
+                totalWeight += w;
+            }
+
+            let r = Math.random() * totalWeight;
+            let cumulativeWeight = 0;
+            for (let i = 0; i < 12; i++) {
+                cumulativeWeight += weights[i];
+                if (r < cumulativeWeight) {
+                    slots[i]++;
+                    remaining--;
+                    break;
+                }
             }
         }
         
