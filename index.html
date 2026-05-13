@@ -447,40 +447,57 @@
         };
     }
 
-    canvas.addEventListener('click', (e) => {
+    // 移除旧的监听，改为 window 监听以实现全局点击取消
+    window.addEventListener('pointerdown', (e) => {
         if (isGameOver) return;
 
         const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+        
+        // 检查点击是否在 Canvas 范围内
+        const isInCanvas = (e.clientX >= rect.left && e.clientX <= rect.right && 
+                           e.clientY >= rect.top && e.clientY <= rect.bottom);
+        
+        if (isInCanvas) {
+            // 核心修复：计算缩放比例
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
 
-        let clickedIdx = -1;
-        for (let i = 0; i < 12; i++) {
-            const pos = getSlotPos(i);
-            const dist = Math.sqrt((mouseX - pos.x) ** 2 + (mouseY - pos.y) ** 2);
-            if (dist < slotRadius) {
-                clickedIdx = i;
-                break;
+            let clickedIdx = -1;
+            for (let i = 0; i < 12; i++) {
+                const pos = getSlotPos(i);
+                const dist = Math.sqrt((mouseX - pos.x) ** 2 + (mouseY - pos.y) ** 2);
+                if (dist < slotRadius) {
+                    clickedIdx = i;
+                    break;
+                }
             }
-        }
 
-        if (clickedIdx !== -1) {
-            if (selectedIndex === clickedIdx) {
-                executeMove(clickedIdx);
-            } else if (selectedIndex === -1) {
-                // 只有在未选中任何槽位时，点击才能触发预览
-                if (slots[clickedIdx] > 0) {
-                    selectedIndex = clickedIdx;
-                    previewSlots = simulateMove(clickedIdx);
+            if (clickedIdx !== -1) {
+                if (selectedIndex === clickedIdx) {
+                    executeMove(clickedIdx);
+                } else if (selectedIndex === -1) {
+                    if (slots[clickedIdx] > 0) {
+                        selectedIndex = clickedIdx;
+                        previewSlots = simulateMove(clickedIdx);
+                    }
+                } else {
+                    selectedIndex = -1;
+                    previewSlots = null;
                 }
             } else {
-                // 如果已选中某槽位但点击了其他槽位，则取消选中
+                // 点击在 Canvas 内但不在槽位上
                 selectedIndex = -1;
                 previewSlots = null;
             }
         } else {
-            selectedIndex = -1;
-            previewSlots = null;
+            // 点击在 Canvas 之外
+            // 如果点击的不是按钮等交互元素，则取消选中
+            if (!e.target.closest('.btn-new-game')) {
+                selectedIndex = -1;
+                previewSlots = null;
+            }
         }
         draw();
     });
