@@ -1,6 +1,7 @@
 # Nirmana Mancala
 
-这是 Coincidence 团队制作的编程解谜游戏 **《U.V.S. Nirmana》**内的一个播棋小游戏。因为笔者玩得很上头，所以把它做（vibe coding）成了一个独立的网页版本，便于在任意平台随时游玩。
+这是 Coincidence 团队制作的编程解谜游戏 **《U.V.S. Nirmana》** 内的一个播棋小游戏。
+因为笔者玩得很上头，所以把它做（vibe coding）成了一个独立的网页版本，便于在任意平台随时游玩。
 原游戏的 steam 页面链接：https://store.steampowered.com/app/2536720/UVS/
 
 ### 核心规则
