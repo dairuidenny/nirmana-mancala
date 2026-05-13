@@ -105,6 +105,35 @@
             transform: translateY(-2px);
         }
 
+        .footer-link {
+            align-self: center;
+            margin-top: -10px;
+            font-size: 12px;
+            color: rgba(210, 180, 140, 0.4);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-link img {
+            width: 14px;
+            height: 14px;
+            opacity: 0.4;
+            transition: opacity 0.3s ease;
+            filter: invert(85%) sepia(10%) saturate(1000%) hue-rotate(320deg) brightness(95%) contrast(85%);
+        }
+
+        .footer-link:hover {
+            color: var(--outer-ring);
+            text-decoration: underline;
+        }
+
+        .footer-link:hover img {
+            opacity: 0.8;
+        }
+
         .status-panel {
             background: rgba(0,0,0,0.2);
             padding: 24px;
@@ -193,7 +222,7 @@
 
 <div class="game-container">
     <div id="game-board-wrapper">
-        <div id="statusHint" class="status-hint info">选择一个槽位</div>
+        <div id="statusHint" class="status-hint info">选择一个格子</div>
         <canvas id="boardCanvas" width="600" height="600"></canvas>
         <div id="gameOver" class="game-over-overlay">
             <h2 id="overStatus">游戏结束</h2>
@@ -212,6 +241,10 @@
             <p>• <b>生存挑战</b>：若某回合未得分，会进入<span style="color: #ff0000;">危险状态</span>。下一回合必须得分，否则游戏直接失败。</p>
         </div>
         <button class="btn-new-game" onclick="initGame()">重新开始</button>
+        <a href="https://github.com/dairuidenny/nirmana-mancala" target="_blank" class="footer-link">
+            <img src="image/GitHub-Mark-64px.png" alt="GitHub">
+            dairuidenny
+        </a>
     </div>
 </div>
 
@@ -246,7 +279,7 @@
             hintEl.innerText = '⚠️ 危险：必须在此回合得分！';
         } else {
             hintEl.className = 'status-hint info';
-            hintEl.innerText = selectedIndex === -1 ? '选择一个槽位' : '再次点击槽位确认播种（点击空白处取消）';
+            hintEl.innerText = selectedIndex === -1 ? '选择一个格子' : '再次点击格子确认播种（点击空白处取消）';
         }
     }
 
