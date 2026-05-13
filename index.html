@@ -222,7 +222,7 @@
 
 <div class="game-container">
     <div id="game-board-wrapper">
-        <div id="statusHint" class="status-hint info">选择一个格子</div>
+        <div id="statusHint" class="status-hint info">选择一个格子进行播种</div>
         <canvas id="boardCanvas" width="600" height="600"></canvas>
         <div id="gameOver" class="game-over-overlay">
             <h2 id="overStatus">游戏结束</h2>
@@ -279,7 +279,7 @@
             hintEl.innerText = '⚠️ 危险：必须在此回合得分！';
         } else {
             hintEl.className = 'status-hint info';
-            hintEl.innerText = selectedIndex === -1 ? '选择一个格子' : '再次点击格子确认播种（点击空白处取消）';
+            hintEl.innerText = selectedIndex === -1 ? '选择一个格子进行播种' : '再次点击格子确认播种（点击空白处取消）';
         }
     }
 
@@ -424,9 +424,10 @@
         for (let i = 0; i < 12; i++) {
             const pos = getSlotPos(i);
             
+            const isHighlighted = (selectedIndex === i) || (previewSlots && previewSlots.originIdx === i);
             ctx.beginPath();
             ctx.arc(pos.x, pos.y, slotRadius, 0, Math.PI * 2);
-            ctx.fillStyle = (selectedIndex === i) ? 'rgba(255, 255, 0, 0.5)' : '#0c0c0c';
+            ctx.fillStyle = isHighlighted ? 'rgba(255, 255, 0, 0.5)' : '#0c0c0c';
             ctx.fill();
             
             let count = slots[i];
@@ -513,15 +514,23 @@
         };
     }
 
-    // 动态光标形状切换
+    // 动态光标形状切换与悬停预览
     window.addEventListener('pointermove', (e) => {
-        if (isGameOver) return;
+        if (isGameOver) {
+            canvas.style.cursor = 'default';
+            return;
+        }
         const rect = canvas.getBoundingClientRect();
         const isInCanvas = (e.clientX >= rect.left && e.clientX <= rect.right && 
                            e.clientY >= rect.top && e.clientY <= rect.bottom);
         
         if (!isInCanvas) {
             canvas.style.cursor = 'default';
+            if (e.pointerType === 'mouse' && selectedIndex === -1) {
+                previewSlots = null;
+                updateStatusHint('mouse');
+                draw();
+            }
             return;
         }
 
@@ -530,14 +539,33 @@
         const mouseX = (e.clientX - rect.left) * scaleX;
         const mouseY = (e.clientY - rect.top) * scaleY;
 
-        let onActiveSlot = false;
+        let hoveredIdx = -1;
         for (let i = 0; i < 12; i++) {
             const pos = getSlotPos(i);
             const dist = Math.sqrt((mouseX - pos.x)**2 + (mouseY - pos.y)**2);
             if (dist < slotRadius) {
-                onActiveSlot = (selectedIndex === -1) ? (slots[i] > 0) : true;
+                hoveredIdx = i;
                 break;
             }
+        }
+
+        // 鼠标模式悬停预览
+        if (e.pointerType === 'mouse' && selectedIndex === -1) {
+            if (hoveredIdx !== -1 && slots[hoveredIdx] > 0) {
+                if (!previewSlots || previewSlots.originIdx !== hoveredIdx) {
+                    previewSlots = simulateMove(hoveredIdx);
+                    if (previewSlots) previewSlots.originIdx = hoveredIdx;
+                }
+            } else {
+                previewSlots = null;
+            }
+            updateStatusHint('mouse');
+            draw();
+        }
+
+        let onActiveSlot = false;
+        if (hoveredIdx !== -1) {
+            onActiveSlot = (selectedIndex === -1) ? (slots[hoveredIdx] > 0) : true;
         }
         canvas.style.cursor = onActiveSlot ? 'pointer' : 'default';
     });
@@ -566,14 +594,20 @@
             }
 
             if (clickedIdx !== -1) {
-                if (selectedIndex === clickedIdx) {
-                    executeMove(clickedIdx);
-                } else if (selectedIndex === -1 && slots[clickedIdx] > 0) {
-                    selectedIndex = clickedIdx;
-                    previewSlots = simulateMove(clickedIdx);
+                if (e.pointerType === 'mouse') {
+                    // PC端：直接执行
+                    if (slots[clickedIdx] > 0) executeMove(clickedIdx);
                 } else {
-                    selectedIndex = -1;
-                    previewSlots = null;
+                    // 移动端：二次确认逻辑
+                    if (selectedIndex === clickedIdx) {
+                        executeMove(clickedIdx);
+                    } else if (selectedIndex === -1 && slots[clickedIdx] > 0) {
+                        selectedIndex = clickedIdx;
+                        previewSlots = simulateMove(clickedIdx);
+                    } else {
+                        selectedIndex = -1;
+                        previewSlots = null;
+                    }
                 }
             } else {
                 selectedIndex = -1;
@@ -583,7 +617,7 @@
             selectedIndex = -1;
             previewSlots = null;
         }
-        updateStatusHint();
+        updateStatusHint(e.pointerType);
         draw();
     });
 
@@ -611,6 +645,7 @@
 
         selectedIndex = -1;
         previewSlots = null;
+        // 执行完后默认回到选择提示，自动适配当前设备语境
         updateStatusHint();
         draw();
     }
