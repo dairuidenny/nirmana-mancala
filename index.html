@@ -6,15 +6,12 @@
     <title>Nirmana Mancala</title>
     <style>
         :root {
-            --bg-color: #1a2a1a; /* 墨绿色背景 */
-            --outer-ring: #d2b48c; /* 浅木色 */
-            --inner-ring: #8b4513; /* 深木色 */
-            --center-color: #d2b48c; /* 中央浅木色 */
-            --slot-color: #0c0c0c; /* 深黑色槽位 */
-            --text-light: #f5f5dc; /* 浅色文字 */
-            --highlight: rgba(255, 255, 0, 0.4); /* 预览高亮 */
-            --danger-color: #ff0000; /* 危险状态红 */
-            --preview-text: #ffff00; /* 预览数字黄色 */
+            --bg-color: #1a2a1a;
+            --outer-ring: #d2b48c;
+            --inner-ring: #8b4513;
+            --slot-color: #0c0c0c;
+            --text-light: #f5f5dc;
+            --danger-color: #ff0000;
         }
 
         body {
@@ -47,77 +44,70 @@
             position: relative;
             width: 600px;
             height: 600px;
-            cursor: pointer;
             flex-shrink: 0;
         }
 
-        /* 移动端适配 */
+        /* 响应式布局：手机端切换为上下结构 */
         @media (max-width: 900px) {
             body {
                 height: auto;
                 min-height: 100vh;
                 overflow-y: auto;
-                padding: 20px 0;
+                padding: 70px 0 20px;
             }
-
             .game-container {
                 flex-direction: column;
                 gap: 30px;
             }
-
             #game-board-wrapper {
                 width: 95vw;
                 height: 95vw;
                 max-width: 600px;
                 max-height: 600px;
             }
-
             #boardCanvas {
                 width: 100% !important;
                 height: 100% !important;
             }
-
             .controls {
                 width: 90vw;
                 max-width: 400px;
             }
-
             .game-over-overlay h2 {
                 font-size: 10vw;
             }
         }
 
-        /* 控制面板 */
         .controls {
             display: flex;
             flex-direction: column;
             gap: 24px;
-            width: 240px;
+            width: 360px;
         }
 
         .btn-new-game {
-            background-color: var(--inner-ring);
-            color: var(--text-light);
-            border: 2px solid var(--outer-ring);
-            padding: 14px 20px;
-            font-size: 18px;
+            width: fit-content;
+            align-self: center;
+            background-color: transparent;
+            color: rgba(210, 180, 140, 0.7);
+            border: 1px solid rgba(210, 180, 140, 0.5);
+            padding: 10px 24px;
+            font-size: 16px;
             cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-radius: 6px;
+            transition: all 0.3s ease;
         }
 
         .btn-new-game:hover {
-            background-color: var(--outer-ring);
-            color: var(--inner-ring);
+            background-color: rgba(210, 180, 140, 0.1);
+            color: var(--outer-ring);
+            border-color: var(--outer-ring);
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
         }
 
         .status-panel {
             background: rgba(0,0,0,0.2);
-            padding: 20px;
+            padding: 24px;
             border-radius: 12px;
             border-left: 4px solid var(--outer-ring);
         }
@@ -135,16 +125,32 @@
             margin: 8px 0;
         }
 
-        .danger-msg {
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid var(--danger-color);
-            border-radius: 4px;
-            color: var(--danger-color);
+        .status-hint {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: fit-content;
+            padding: 8px 30px;
+            border-radius: 20px;
             font-weight: bold;
-            display: none;
             text-align: center;
+            white-space: nowrap;
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .status-hint.info {
+            background: rgba(210, 180, 140, 0.1);
+            border: 1px solid var(--outer-ring);
+            color: var(--outer-ring);
+        }
+
+        .status-hint.danger {
+            background: rgba(255, 0, 0, 0.15);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
             animation: pulse 1.5s infinite;
         }
 
@@ -187,6 +193,7 @@
 
 <div class="game-container">
     <div id="game-board-wrapper">
+        <div id="statusHint" class="status-hint info">选择一个槽位</div>
         <canvas id="boardCanvas" width="600" height="600"></canvas>
         <div id="gameOver" class="game-over-overlay">
             <h2 id="overStatus">游戏结束</h2>
@@ -197,14 +204,14 @@
 
     <div class="controls">
         <div class="status-panel">
-            <h3>规则指南</h3>
-            <p>• <b>播种</b>：点击槽位，按顺时针方向依次放入棋子。</p>
-            <p>• <b>基础得分</b>：最终落点槽位若有 2 或 3 枚棋子，则移除并得分，分数等于移除的棋子数量。</p>
-            <p>• <b>连锁奖励</b>：得分后，逆时针检查相邻槽位。若满足 2 或 3，则移除并获得<b>数量平方</b>的分数！可联锁移除。</p>
-            <p>• <b>生存挑战</b>：无得分回合会进入危险状态。下一回合必须得分，否则游戏直接失败。</p>
-            <div id="dangerText" class="danger-msg">⚠️ 危险：必须在此回合得分！</div>
+            <h3>环形播棋 • 规则指南</h3>
+            <p>• <b>目标</b>：移除棋盘上的所有棋子，并尽力获得更高的分数。以 100 分为目标吧！</p>
+            <p>• <b>播种</b>：取出某格的全部棋子，按<b>[顺时针]</b>方向往相邻格依次放入一颗棋子。</p>
+            <p>• <b>基础得分</b>：若放入的最后一格的棋子数量<span style="color: #ffff00;">刚好达到 2 或 3</span>，则移除该格内所有棋子，并得分。分数等于移除的棋子数量。</p>
+            <p>• <b>连锁奖励</b>：得分后，按<b>[逆时针]</b>方向往回检查相邻格。若棋子数量也满足 2 或 3，则移除棋子，并获得<span style="color: #00ffff;">棋子数量平方</span>的分数（4 分或 9 分）！可连续移除得分。</p>
+            <p>• <b>生存挑战</b>：若某回合未得分，会进入<span style="color: #ff0000;">危险状态</span>。下一回合必须得分，否则游戏直接失败。</p>
         </div>
-        <button class="btn-new-game" onclick="initGame()">开始新游戏</button>
+        <button class="btn-new-game" onclick="initGame()">重新开始</button>
     </div>
 </div>
 
@@ -225,7 +232,25 @@
     let isGameOver = false;
     let animationId = null;
 
-    // 初始化游戏
+    // 更新顶部状态提示
+    function updateStatusHint() {
+        const hintEl = document.getElementById('statusHint');
+        if (isGameOver) {
+            hintEl.style.display = 'none';
+            return;
+        }
+        hintEl.style.display = 'block';
+
+        if (isDanger) {
+            hintEl.className = 'status-hint danger';
+            hintEl.innerText = '⚠️ 危险：必须在此回合得分！';
+        } else {
+            hintEl.className = 'status-hint info';
+            hintEl.innerText = selectedIndex === -1 ? '选择一个槽位' : '再次点击槽位确认播种（点击空白处取消）';
+        }
+    }
+
+    // 游戏初始化
     function initGame() {
         if (animationId) cancelAnimationFrame(animationId);
         animationId = null;
@@ -235,7 +260,6 @@
         previewSlots = null;
         isGameOver = false;
         document.getElementById('gameOver').style.display = 'none';
-        document.getElementById('dangerText').style.display = 'none';
 
         slots = new Array(12).fill(0);
         let remaining = 50;
@@ -246,6 +270,8 @@
                 remaining--;
             }
         }
+        
+        updateStatusHint();
         draw();
     }
 
@@ -258,35 +284,32 @@
         };
     }
 
-    // 绘制棋子圆点
-    function drawPieces(ctx, x, y, count, color) {
+    // 绘制槽位内的棋子
+    function drawPieces(ctx, x, y, count, color, yellowCount = 0) {
         if (count <= 0) return;
-        
-        ctx.fillStyle = color;
         const dotSize = 7;
+        const yellowColor = '#ffff00';
         
         let points = [];
         if (count <= 8) {
             const layout = [
-                [0, 0], // 1
-                [-10, -10, 10, 10], // 2
-                [-12, 10, 12, 10, 0, -12], // 3
-                [-12, -12, 12, -12, -12, 12, 12, 12], // 4
-                [-14, -14, 14, -14, -14, 14, 14, 14, 0, 0], // 5
-                [-15, -10, 15, -10, -15, 10, 15, 10, 0, -15, 0, 15], // 6
-                [-15, -15, 15, -15, -15, 15, 15, 15, 0, -18, 0, 18, 0, 0], // 7
-                [-18, -12, 0, -12, 18, -12, -18, 12, 0, 12, 18, 12, -10, 0, 10, 0] // 8
+                [0, 0], 
+                [-10, -10, 10, 10], 
+                [-12, 10, 12, 10, 0, -12], 
+                [-12, -12, 12, -12, -12, 12, 12, 12], 
+                [-14, -14, 14, -14, -14, 14, 14, 14, 0, 0], 
+                [-15, -10, 15, -10, -15, 10, 15, 10, 0, -15, 0, 15], 
+                [-15, -15, 15, -15, -15, 15, 15, 15, 0, -18, 0, 18, 0, 0], 
+                [-18, -12, 0, -12, 18, -12, -18, 12, 0, 12, 18, 12, -10, 0, 10, 0]
             ];
             let coords = layout[count-1];
             for(let i=0; i<coords.length; i+=2) points.push({dx: coords[i], dy: coords[i+1]});
         } else {
-            // 优化多于8个时的排列：采用同心圆分布
-            // 内圈
+            // 多于8个时的同心圆排列
             for(let i=0; i<6; i++) {
                 const a = (i * 60) * Math.PI / 180;
                 points.push({dx: Math.cos(a)*12, dy: Math.sin(a)*12});
             }
-            // 外圈
             let remaining = count - 6;
             for(let i=0; i<remaining; i++) {
                 const a = (i * 360 / remaining) * Math.PI / 180;
@@ -294,13 +317,15 @@
             }
         }
 
-        points.forEach(p => {
+        points.forEach((p, i) => {
             ctx.beginPath();
+            ctx.fillStyle = (i >= count - yellowCount) ? yellowColor : color;
             ctx.roundRect(x + p.dx - dotSize/2, y + p.dy - dotSize/2, dotSize, dotSize, 2);
             ctx.fill();
         });
     }
 
+    // 核心绘制函数
     function draw() {
         if (animationId) {
             cancelAnimationFrame(animationId);
@@ -308,7 +333,7 @@
         }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. 绘制外环（浅木色）
+        // 棋盘背景
         ctx.beginPath();
         ctx.arc(centerX, centerY, boardRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#d2b48c'; 
@@ -317,20 +342,18 @@
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // 2. 绘制内环（深木色）
         ctx.beginPath();
         ctx.arc(centerX, centerY, boardRadius - 40, 0, Math.PI * 2);
         ctx.fillStyle = '#8b4513';
         ctx.fill();
 
-        // 3. 中央区域
         ctx.beginPath();
         ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#d2b48c'; 
         ctx.fill();
 
+        // 危险状态呼吸效果
         if (isDanger) {
-            // 呼吸动画效果：透明度在 0.3 到 1.0 之间跳动
             const alpha = 0.65 + 0.35 * Math.sin(Date.now() / 300);
             ctx.beginPath();
             ctx.arc(centerX, centerY, innerRadius - 4, 0, Math.PI * 2);
@@ -339,7 +362,7 @@
             ctx.stroke();
         }
 
-        // 分数文字
+        // 计分显示
         const brownColor = '#5d4037';
         ctx.fillStyle = brownColor;
         ctx.textAlign = 'center';
@@ -348,11 +371,10 @@
         ctx.font = 'bold 72px Arial';
         ctx.fillText(totalScore, centerX, centerY + 35);
 
-        // 4. 槽位绘制
+        // 遍历绘制 12 个槽位
         for (let i = 0; i < 12; i++) {
             const pos = getSlotPos(i);
             
-            // 槽位阴影
             ctx.beginPath();
             ctx.arc(pos.x, pos.y, slotRadius, 0, Math.PI * 2);
             ctx.fillStyle = (selectedIndex === i) ? 'rgba(255, 255, 0, 0.5)' : '#0c0c0c';
@@ -360,15 +382,16 @@
             
             let count = slots[i];
             let dotColor = '#f5f5dc';
-            let numColor = brownColor; // 默认改为棕色
+            let numColor = brownColor;
+            let yellowCount = 0;
             
             if (previewSlots && previewSlots.changes.has(i)) {
-                // 预览时显示“移除前”的数据
-                count = previewSlots.dataBeforeRemoval[i];
-                dotColor = '#ffff00'; 
+                const nextCount = previewSlots.dataBeforeRemoval[i];
+                if (nextCount > count) yellowCount = nextCount - count;
+                count = nextCount;
                 numColor = '#ffff00';
 
-                // 显示得分预览 (+X)
+                // 绘制得分预览 (+X)
                 if (previewSlots.slotScores && previewSlots.slotScores[i]) {
                     const scoreR = boardRadius + 15;
                     const sx = centerX + Math.cos(pos.angle) * scoreR;
@@ -379,23 +402,20 @@
                 }
             }
 
-            drawPieces(ctx, pos.x, pos.y, count, dotColor);
+            drawPieces(ctx, pos.x, pos.y, count, dotColor, yellowCount);
 
-            // 槽位内侧数字：移动到红圈内侧
             const textR = innerRadius - 32; 
-            const tx = centerX + Math.cos(pos.angle) * textR;
-            const ty = centerY + Math.sin(pos.angle) * textR;
             ctx.fillStyle = numColor;
             ctx.font = 'bold 18px Arial';
-            ctx.fillText(count, tx, ty + 7);
+            ctx.fillText(count, centerX + Math.cos(pos.angle) * textR, centerY + Math.sin(pos.angle) * textR + 7);
         }
 
-        // 如果处于危险状态，则持续请求动画帧
         if (isDanger && !isGameOver) {
             animationId = requestAnimationFrame(draw);
         }
     }
 
+    // 逻辑模拟：计算移动后的状态
     function simulateMove(index) {
         let tempSlots = [...slots];
         let count = tempSlots[index];
@@ -403,8 +423,7 @@
 
         tempSlots[index] = 0;
         let lastIdx = -1;
-        let changes = new Set();
-        changes.add(index);
+        let changes = new Set([index]);
 
         for (let i = 1; i <= count; i++) {
             let nextIdx = (index + i) % 12;
@@ -413,11 +432,9 @@
             changes.add(nextIdx);
         }
 
-        // 记录移除前的快照，用于预览
         let dataBeforeRemoval = [...tempSlots];
-
         let score = 0;
-        let slotScores = {}; // 记录每个槽位的贡献得分
+        let slotScores = {}; 
         let currentIdx = lastIdx;
         let isFirstStep = true;
 
@@ -442,23 +459,49 @@
             data: tempSlots, 
             dataBeforeRemoval: dataBeforeRemoval, 
             score: score, 
-            slotScores: slotScores, // 新增：每个槽位的得分详情
+            slotScores: slotScores, 
             changes: changes 
         };
     }
 
-    // 移除旧的监听，改为 window 监听以实现全局点击取消
+    // 动态光标形状切换
+    window.addEventListener('pointermove', (e) => {
+        if (isGameOver) return;
+        const rect = canvas.getBoundingClientRect();
+        const isInCanvas = (e.clientX >= rect.left && e.clientX <= rect.right && 
+                           e.clientY >= rect.top && e.clientY <= rect.bottom);
+        
+        if (!isInCanvas) {
+            canvas.style.cursor = 'default';
+            return;
+        }
+
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (e.clientX - rect.left) * scaleX;
+        const mouseY = (e.clientY - rect.top) * scaleY;
+
+        let onActiveSlot = false;
+        for (let i = 0; i < 12; i++) {
+            const pos = getSlotPos(i);
+            const dist = Math.sqrt((mouseX - pos.x)**2 + (mouseY - pos.y)**2);
+            if (dist < slotRadius) {
+                onActiveSlot = (selectedIndex === -1) ? (slots[i] > 0) : true;
+                break;
+            }
+        }
+        canvas.style.cursor = onActiveSlot ? 'pointer' : 'default';
+    });
+
+    // 全局点击监听
     window.addEventListener('pointerdown', (e) => {
         if (isGameOver) return;
 
         const rect = canvas.getBoundingClientRect();
-        
-        // 检查点击是否在 Canvas 范围内
         const isInCanvas = (e.clientX >= rect.left && e.clientX <= rect.right && 
                            e.clientY >= rect.top && e.clientY <= rect.bottom);
         
         if (isInCanvas) {
-            // 核心修复：计算缩放比例
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
             const mouseX = (e.clientX - rect.left) * scaleX;
@@ -467,8 +510,7 @@
             let clickedIdx = -1;
             for (let i = 0; i < 12; i++) {
                 const pos = getSlotPos(i);
-                const dist = Math.sqrt((mouseX - pos.x) ** 2 + (mouseY - pos.y) ** 2);
-                if (dist < slotRadius) {
+                if (Math.sqrt((mouseX - pos.x)**2 + (mouseY - pos.y)**2) < slotRadius) {
                     clickedIdx = i;
                     break;
                 }
@@ -477,31 +519,26 @@
             if (clickedIdx !== -1) {
                 if (selectedIndex === clickedIdx) {
                     executeMove(clickedIdx);
-                } else if (selectedIndex === -1) {
-                    if (slots[clickedIdx] > 0) {
-                        selectedIndex = clickedIdx;
-                        previewSlots = simulateMove(clickedIdx);
-                    }
+                } else if (selectedIndex === -1 && slots[clickedIdx] > 0) {
+                    selectedIndex = clickedIdx;
+                    previewSlots = simulateMove(clickedIdx);
                 } else {
                     selectedIndex = -1;
                     previewSlots = null;
                 }
             } else {
-                // 点击在 Canvas 内但不在槽位上
                 selectedIndex = -1;
                 previewSlots = null;
             }
-        } else {
-            // 点击在 Canvas 之外
-            // 如果点击的不是按钮等交互元素，则取消选中
-            if (!e.target.closest('.btn-new-game')) {
-                selectedIndex = -1;
-                previewSlots = null;
-            }
+        } else if (!e.target.closest('.btn-new-game')) {
+            selectedIndex = -1;
+            previewSlots = null;
         }
+        updateStatusHint();
         draw();
     });
 
+    // 执行真实移动
     function executeMove(index) {
         const result = simulateMove(index);
         if (!result) return;
@@ -525,25 +562,22 @@
 
         selectedIndex = -1;
         previewSlots = null;
-        document.getElementById('dangerText').style.display = isDanger ? 'block' : 'none';
+        updateStatusHint();
         draw();
     }
 
+    // 游戏结束显示
     function endGame(win) {
         isGameOver = true;
         draw();
         const overlay = document.getElementById('gameOver');
-        const status = document.getElementById('overStatus');
-        const finalScoreText = document.getElementById('finalScore');
-        
         overlay.style.display = 'flex';
-        status.innerText = win ? '完美清盘！' : '游戏失败';
-        status.style.color = win ? '#ffd700' : '#ff4444';
-        finalScoreText.innerText = '最终得分: ' + totalScore;
+        document.getElementById('overStatus').innerText = win ? '完美清盘' : '游戏失败';
+        document.getElementById('overStatus').style.color = win ? '#ffd700' : '#ff4444';
+        document.getElementById('finalScore').innerText = '最终得分: ' + totalScore;
     }
 
     initGame();
 </script>
-
 </body>
 </html>
